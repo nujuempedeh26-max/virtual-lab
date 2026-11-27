@@ -1,1 +1,1515 @@
-# virtual-lab
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Virtual Lab Rangkaian Listrik — Tunggal, Seri & Paralel</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <!-- Font Awesome for crisp UI icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    /* Custom scrollbar & sleek range input styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.3);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.5);
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 9999px;
+      background: #334155;
+      outline: none;
+    }
+    html:not(.dark) input[type="range"] {
+      background: #cbd5e1;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+      transition: transform 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    canvas {
+      touch-action: manipulation;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col transition-colors duration-200">
+
+  <!-- HEADER / NAVBAR -->
+  <header class="bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-slate-950 shadow-lg shadow-amber-500/20">
+          <i class="fa-solid fa-bolt text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-extrabold tracking-tight leading-tight">
+            Virtual Lab <span class="text-sky-500">Rangkaian Listrik</span>
+          </h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Simulasi Interaktif IPA SMP & Fisika SMA</p>
+        </div>
+      </div>
+
+      <!-- Mode Tabs -->
+      <nav class="flex bg-slate-200/80 dark:bg-slate-800 p-1 rounded-xl gap-1" role="tablist" aria-label="Pilih Jenis Rangkaian">
+        <button id="tab-single" onclick="setMode('single')" class="mode-tab px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all">
+          <i class="fa-solid fa-minus mr-1.5"></i>Tunggal
+        </button>
+        <button id="tab-series" onclick="setMode('series')" class="mode-tab px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all">
+          <i class="fa-solid fa-grip-lines mr-1.5"></i>Seri
+        </button>
+        <button id="tab-parallel" onclick="setMode('parallel')" class="mode-tab px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all">
+          <i class="fa-solid fa-code-branch mr-1.5"></i>Paralel
+        </button>
+      </nav>
+
+      <!-- Utility Buttons -->
+      <div class="flex items-center gap-2">
+        <button onclick="resetSimulation()" title="Reset Pengaturan Default" class="px-3 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold transition flex items-center gap-1.5">
+          <i class="fa-solid fa-rotate-left"></i>
+          <span class="hidden sm:inline">Reset</span>
+        </button>
+        <button id="theme-toggle" onclick="toggleTheme()" title="Ganti Tema Terang/Gelap" class="w-9 h-9 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-sm transition">
+          <i id="theme-icon" class="fa-solid fa-sun text-amber-400"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+    <!-- LEFT / CENTER: INTERACTIVE CANVAS + DIGITAL READOUTS (8 cols on lg) -->
+    <section class="lg:col-span-8 flex flex-col gap-4">
+
+      <!-- CANVAS CARD -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+        <!-- Canvas Toolbar -->
+        <div class="px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 bg-slate-50/70 dark:bg-slate-900/70">
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Current flow visualization selector -->
+            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Aliran:</span>
+            <div class="inline-flex rounded-lg bg-slate-200 dark:bg-slate-800 p-0.5 text-xs">
+              <button id="flow-electron" onclick="setFlowType('electron')" class="flow-btn px-2.5 py-1 rounded-md font-medium transition">
+                <span class="inline-block w-2 h-2 rounded-full bg-sky-400 mr-1"></span>Elektron (−→+)
+              </button>
+              <button id="flow-conventional" onclick="setFlowType('conventional')" class="flow-btn px-2.5 py-1 rounded-md font-medium transition">
+                <span class="inline-block w-2 h-2 rounded-full bg-rose-500 mr-1"></span>Konvensional (+→−)
+              </button>
+              <button id="flow-both" onclick="setFlowType('both')" class="flow-btn px-2.5 py-1 rounded-md font-medium transition">
+                Keduanya
+              </button>
+            </div>
+          </div>
+
+          <!-- Toggle labels & schematic hints -->
+          <div class="flex items-center gap-3">
+            <label class="inline-flex items-center gap-1.5 cursor-pointer text-xs font-medium select-none">
+              <input type="checkbox" id="toggle-labels" checked onchange="toggleLabels()" class="rounded text-sky-500 focus:ring-sky-500 w-4 h-4 accent-sky-500" />
+              <span>Label Nilai</span>
+            </label>
+            <span class="hidden sm:inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 bg-slate-200/70 dark:bg-slate-800 px-2 py-1 rounded-md">
+              <i class="fa-solid fa-hand-pointer text-sky-400"></i> Klik saklar/lampu di diagram
+            </span>
+          </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div id="canvas-wrapper" class="relative w-full h-[360px] sm:h-[420px] bg-slate-950 select-none">
+          <canvas id="circuitCanvas" class="w-full h-full block cursor-pointer"></canvas>
+
+          <!-- Floating Status Banner -->
+          <div id="status-badge" class="absolute top-3 left-3 px-3 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-md border flex items-center gap-2 transition-all">
+            <span id="status-dot" class="w-2.5 h-2.5 rounded-full"></span>
+            <span id="status-text">Rangkaian Tertutup — Arus Mengalir</span>
+          </div>
+
+          <!-- Interactive Hint Toast (Bottom Right) -->
+          <div id="canvas-tooltip" class="hidden absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-slate-900/90 text-slate-100 border border-slate-700 text-xs shadow-lg pointer-events-none">
+          </div>
+        </div>
+      </div>
+
+      <!-- DIGITAL MULTIMETER / REAL-TIME READOUTS -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
+            <i class="fa-solid fa-gauge-high text-sky-500"></i>
+            Alat Ukur Digital (Multimeter Real-Time)
+          </h2>
+          <span class="text-xs font-mono text-slate-400">Hukum Ohm & Kirchhoff</span>
+        </div>
+
+        <!-- Total Circuit Metrics (4 Cards) -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          <div class="rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 p-3">
+            <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Tegangan Total (V<sub>tot</sub>)</div>
+            <div id="read-vtot" class="text-xl sm:text-2xl font-mono font-bold text-amber-500 mt-1">12.00 V</div>
+          </div>
+          <div class="rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 p-3">
+            <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Hambatan Total (R<sub>tot</sub>)</div>
+            <div id="read-rtot" class="text-xl sm:text-2xl font-mono font-bold text-purple-400 mt-1">6.00 Ω</div>
+          </div>
+          <div class="rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 p-3">
+            <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Arus Total (I<sub>tot</sub>)</div>
+            <div id="read-itot" class="text-xl sm:text-2xl font-mono font-bold text-sky-400 mt-1">2.00 A</div>
+          </div>
+          <div class="rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 p-3">
+            <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Daya Total (P<sub>tot</sub>)</div>
+            <div id="read-ptot" class="text-xl sm:text-2xl font-mono font-bold text-emerald-400 mt-1">24.00 W</div>
+          </div>
+        </div>
+
+        <!-- Per-Lamp Breakdown Table -->
+        <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="bg-slate-100 dark:bg-slate-800/90 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                <th class="py-2 px-3 font-semibold">Komponen</th>
+                <th class="py-2 px-3 font-semibold">Status</th>
+                <th class="py-2 px-3 font-semibold font-mono">Hambatan (R)</th>
+                <th class="py-2 px-3 font-semibold font-mono">Tegangan (V)</th>
+                <th class="py-2 px-3 font-semibold font-mono">Arus (I)</th>
+                <th class="py-2 px-3 font-semibold font-mono">Daya (P = I²R)</th>
+              </tr>
+            </thead>
+            <tbody id="lamp-table-body" class="divide-y divide-slate-200 dark:divide-slate-800 font-mono text-xs sm:text-sm">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- DYNAMIC PHYSICS FORMULAS & EXPLANATION PANEL -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
+            <i class="fa-solid fa-square-root-variable text-amber-500"></i>
+            Analisis Rumus Fisika & Substitusi Real-Time
+          </h2>
+          <span id="concept-badge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">
+            Rangkaian Tunggal
+          </span>
+        </div>
+
+        <div id="formula-content" class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs sm:text-sm">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT SIDEBAR: CONTROLS & EXPERIMENTATION (4 cols on lg) -->
+    <aside class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- CIRCUIT CONFIGURATION CARD -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm flex flex-col gap-4">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-sky-500"></i>
+          Panel Kontrol Eksperimen
+        </h2>
+
+        <!-- Battery Voltage Control -->
+        <div class="p-3 rounded-xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70">
+          <div class="flex justify-between items-center mb-1.5">
+            <label for="slider-voltage" class="text-xs sm:text-sm font-semibold flex items-center gap-1.5">
+              <i class="fa-solid fa-car-battery text-amber-400"></i>
+              Tegangan Baterai (V)
+            </label>
+            <span id="val-voltage" class="font-mono text-sm font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md">12.0 V</span>
+          </div>
+          <input type="range" id="slider-voltage" min="1.5" max="24" step="0.5" value="12" oninput="updateVoltage(this.value)" class="w-full" />
+          <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+            <span>1.5 V</span>
+            <span>9.0 V</span>
+            <span>12.0 V</span>
+            <span>24.0 V</span>
+          </div>
+        </div>
+
+        <!-- Number of Lamps Toggle (Visible in Series & Parallel) -->
+        <div id="lamp-count-box" class="hidden p-3 rounded-xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70">
+          <div class="flex items-center justify-between">
+            <span class="text-xs sm:text-sm font-semibold">Jumlah Lampu (Beban)</span>
+            <div class="inline-flex rounded-lg bg-slate-200 dark:bg-slate-900 p-1">
+              <button id="btn-count-2" onclick="setLampCount(2)" class="px-3 py-1 rounded-md text-xs font-bold transition">2 Lampu</button>
+              <button id="btn-count-3" onclick="setLampCount(3)" class="px-3 py-1 rounded-md text-xs font-bold transition">3 Lampu</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Switch & Branch Switches -->
+        <div class="p-3 rounded-xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70 flex flex-col gap-2.5">
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Kontrol Saklar (Switch)</div>
+          
+          <!-- Main Switch -->
+          <div class="flex items-center justify-between">
+            <span class="text-xs sm:text-sm font-medium">Saklar Utama (S<sub>utama</sub>)</span>
+            <button id="btn-main-switch" onclick="toggleMainSwitch()" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
+              <!-- Dynamic text -->
+            </button>
+          </div>
+
+          <!-- Branch Switches (Only for Parallel Mode) -->
+          <div id="branch-switches-container" class="hidden flex-col gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Individual Lamp Resistance & "Putuskan Lampu / Lepas Bohlam" Controls -->
+        <div class="flex flex-col gap-3">
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Pengaturan Hambatan & Simulasi Lampu Putus
+          </div>
+          <div id="lamps-control-list" class="flex flex-col gap-3">
+            <!-- Populated dynamically for L1, L2, (L3) -->
+          </div>
+        </div>
+      </div>
+
+      <!-- PEDAGOGICAL INSIGHT / PERBANDINGAN KONSEP CARD -->
+      <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-slate-100 rounded-2xl border border-slate-700 p-4 shadow-sm">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2 mb-2">
+          <i class="fa-solid fa-lightbulb"></i>
+          Tips Eksperimen & Pengamatan
+        </h3>
+        <p id="pedagogical-tip" class="text-xs text-slate-300 leading-relaxed">
+          Coba ubah nilai hambatan lampu atau matikan salah satu saklar untuk mengamati bagaimana arus dan nyala lampu berubah!
+        </p>
+      </div>
+
+    </aside>
+  </main>
+
+  <script>
+    /**
+     * =========================================================================
+     * VIRTUAL LAB RANGKAIAN LISTRIK (TUNGGAL, SERI, PARALEL)
+     * State, Physics Engine, Interactive Canvas Renderer & UI Controller
+     * =========================================================================
+     */
+
+    // Application State
+    const state = {
+      mode: 'single', // 'single' | 'series' | 'parallel'
+      voltage: 12.0,  // 1.5V to 24.0V
+      lampCount: 2,   // 2 or 3 (for series & parallel)
+      mainSwitchClosed: true,
+      flowType: 'electron', // 'electron' | 'conventional' | 'both'
+      showLabels: true,
+      lamps: [
+        { id: 1, name: 'Lampu 1 (L₁)', r: 6, switchClosed: true, broken: false },
+        { id: 2, name: 'Lampu 2 (L₂)', r: 6, switchClosed: true, broken: false },
+        { id: 3, name: 'Lampu 3 (L₃)', r: 6, switchClosed: true, broken: false },
+      ],
+      // Calculated electrical values
+      results: {
+        rTotal: 6,
+        iTotal: 2,
+        pTotal: 24,
+        isClosedCircuit: true,
+        lampMetrics: [] // { active, v, i, p, brightness }
+      },
+      // Interactive hitboxes on canvas for click/tap & hover
+      hitboxes: [],
+      hoveredId: null,
+      // Animation phase offsets
+      animPhase: 0,
+      lastTimestamp: 0
+    };
+
+    // Canvas & Context references
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    /**
+     * =========================================================================
+     * 1. PHYSICS ENGINE (HUKUM OHM & HUKUM KIRCHHOFF)
+     * =========================================================================
+     */
+    function calculatePhysics() {
+      const V = state.voltage;
+      const activeCount = state.mode === 'single' ? 1 : state.lampCount;
+      const metrics = [];
+
+      let rTotal = 0;
+      let iTotal = 0;
+      let pTotal = 0;
+      let isClosedCircuit = false;
+
+      if (state.mode === 'single') {
+        const lamp = state.lamps[0];
+        const pathClosed = state.mainSwitchClosed && !lamp.broken;
+
+        if (pathClosed) {
+          isClosedCircuit = true;
+          rTotal = lamp.r;
+          iTotal = V / rTotal;
+          pTotal = V * iTotal;
+          metrics.push({
+            id: 1,
+            active: true,
+            v: V,
+            i: iTotal,
+            p: pTotal,
+            brightness: computeBrightness(pTotal)
+          });
+        } else {
+          isClosedCircuit = false;
+          rTotal = lamp.broken ? Infinity : lamp.r;
+          iTotal = 0;
+          pTotal = 0;
+          metrics.push({
+            id: 1,
+            active: false,
+            v: 0,
+            i: 0,
+            p: 0,
+            brightness: 0
+          });
+        }
+      } 
+      else if (state.mode === 'series') {
+        // In series, all lamps share a single path. If main switch is open OR ANY lamp is broken, current = 0 everywhere!
+        let anyBroken = false;
+        let sumR = 0;
+
+        for (let idx = 0; idx < activeCount; idx++) {
+          const lamp = state.lamps[idx];
+          if (lamp.broken) anyBroken = true;
+          sumR += lamp.r;
+        }
+
+        const pathClosed = state.mainSwitchClosed && !anyBroken;
+
+        if (pathClosed && sumR > 0) {
+          isClosedCircuit = true;
+          rTotal = sumR;
+          iTotal = V / rTotal;
+          pTotal = V * iTotal;
+
+          for (let idx = 0; idx < activeCount; idx++) {
+            const lamp = state.lamps[idx];
+            const vLamp = iTotal * lamp.r;
+            const pLamp = iTotal * iTotal * lamp.r;
+            metrics.push({
+              id: lamp.id,
+              active: true,
+              v: vLamp,
+              i: iTotal,
+              p: pLamp,
+              brightness: computeBrightness(pLamp)
+            });
+          }
+        } else {
+          isClosedCircuit = false;
+          rTotal = anyBroken ? Infinity : sumR;
+          iTotal = 0;
+          pTotal = 0;
+
+          for (let idx = 0; idx < activeCount; idx++) {
+            metrics.push({
+              id: state.lamps[idx].id,
+              active: false,
+              v: 0,
+              i: 0,
+              p: 0,
+              brightness: 0
+            });
+          }
+        }
+      } 
+      else if (state.mode === 'parallel') {
+        // In parallel, each branch receives full voltage V if mainSwitchClosed AND branch switch closed AND lamp not broken
+        let invR = 0;
+        let activeBranches = 0;
+
+        for (let idx = 0; idx < activeCount; idx++) {
+          const lamp = state.lamps[idx];
+          const branchClosed = state.mainSwitchClosed && lamp.switchClosed && !lamp.broken;
+
+          if (branchClosed) {
+            activeBranches++;
+            invR += 1 / lamp.r;
+            const iBranch = V / lamp.r;
+            const pBranch = V * iBranch;
+            iTotal += iBranch;
+            pTotal += pBranch;
+
+            metrics.push({
+              id: lamp.id,
+              active: true,
+              v: V,
+              i: iBranch,
+              p: pBranch,
+              brightness: computeBrightness(pBranch)
+            });
+          } else {
+            metrics.push({
+              id: lamp.id,
+              active: false,
+              v: 0,
+              i: 0,
+              p: 0,
+              brightness: 0
+            });
+          }
+        }
+
+        if (activeBranches > 0 && invR > 0) {
+          isClosedCircuit = true;
+          rTotal = 1 / invR;
+        } else {
+          isClosedCircuit = false;
+          rTotal = Infinity;
+          iTotal = 0;
+          pTotal = 0;
+        }
+      }
+
+      state.results = {
+        rTotal,
+        iTotal,
+        pTotal,
+        isClosedCircuit,
+        lampMetrics: metrics
+      };
+    }
+
+    /**
+     * Maps dissipated power (Watts) to a perceptual brightness curve [0..1.4]
+     * Reference: 12V across 6 Ohm = 24W -> brightness ~ 0.85
+     */
+    function computeBrightness(powerWatts) {
+      if (powerWatts <= 0.001) return 0;
+      // Smooth logarithmic/power curve so low voltages still visibly glow and high voltages shine intensely
+      const normalized = Math.pow(powerWatts / 30, 0.55);
+      return Math.min(1.45, Math.max(0.12, normalized));
+    }
+
+    /**
+     * =========================================================================
+     * 2. UI CONTROLS & DOM UPDATES
+     * =========================================================================
+     */
+    function setMode(newMode) {
+      state.mode = newMode;
+      updateAll();
+    }
+
+    function updateVoltage(val) {
+      state.voltage = parseFloat(val);
+      document.getElementById('val-voltage').textContent = state.voltage.toFixed(1) + ' V';
+      updateAll();
+    }
+
+    function setLampCount(count) {
+      state.lampCount = count;
+      updateAll();
+    }
+
+    function toggleMainSwitch() {
+      state.mainSwitchClosed = !state.mainSwitchClosed;
+      updateAll();
+    }
+
+    function toggleBranchSwitch(index) {
+      state.lamps[index].switchClosed = !state.lamps[index].switchClosed;
+      updateAll();
+    }
+
+    function updateLampResistance(index, val) {
+      state.lamps[index].r = parseFloat(val);
+      updateAll();
+    }
+
+    function toggleLampBroken(index) {
+      state.lamps[index].broken = !state.lamps[index].broken;
+      updateAll();
+    }
+
+    function setFlowType(type) {
+      state.flowType = type;
+      updateToolbarButtons();
+    }
+
+    function toggleLabels() {
+      state.showLabels = document.getElementById('toggle-labels').checked;
+    }
+
+    function toggleTheme() {
+      const htmlEl = document.documentElement;
+      const isDark = htmlEl.classList.toggle('dark');
+      const icon = document.getElementById('theme-icon');
+      if (isDark) {
+        icon.className = 'fa-solid fa-sun text-amber-400';
+      } else {
+        icon.className = 'fa-solid fa-moon text-slate-700';
+      }
+    }
+
+    function resetSimulation() {
+      state.voltage = 12.0;
+      state.lampCount = 2;
+      state.mainSwitchClosed = true;
+      state.lamps = [
+        { id: 1, name: 'Lampu 1 (L₁)', r: 6, switchClosed: true, broken: false },
+        { id: 2, name: 'Lampu 2 (L₂)', r: 6, switchClosed: true, broken: false },
+        { id: 3, name: 'Lampu 3 (L₃)', r: 6, switchClosed: true, broken: false },
+      ];
+      document.getElementById('slider-voltage').value = 12;
+      document.getElementById('val-voltage').textContent = '12.0 V';
+      updateAll();
+    }
+
+    function updateAll() {
+      calculatePhysics();
+      updateToolbarButtons();
+      renderControlPanels();
+      renderMultimeter();
+      renderFormulas();
+      updateStatusBadge();
+    }
+
+    function updateToolbarButtons() {
+      // Mode tabs
+      ['single', 'series', 'parallel'].forEach(m => {
+        const el = document.getElementById('tab-' + m);
+        if (state.mode === m) {
+          el.className = 'mode-tab px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-white dark:bg-slate-950 text-sky-600 dark:text-sky-400 shadow-sm transition-all';
+        } else {
+          el.className = 'mode-tab px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all';
+        }
+      });
+
+      // Flow type buttons
+      ['electron', 'conventional', 'both'].forEach(f => {
+        const el = document.getElementById('flow-' + f);
+        if (state.flowType === f) {
+          el.className = 'flow-btn px-2.5 py-1 rounded-md font-semibold bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-sm transition';
+        } else {
+          el.className = 'flow-btn px-2.5 py-1 rounded-md font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition';
+        }
+      });
+    }
+
+    function updateStatusBadge() {
+      const badge = document.getElementById('status-badge');
+      const dot = document.getElementById('status-dot');
+      const text = document.getElementById('status-text');
+
+      if (state.results.isClosedCircuit) {
+        badge.className = 'absolute top-3 left-3 px-3 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-md border bg-emerald-950/80 border-emerald-500/40 text-emerald-300 flex items-center gap-2 transition-all';
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
+        text.textContent = `Rangkaian Tertutup — Arus Total ${state.results.iTotal.toFixed(2)} A`;
+      } else {
+        badge.className = 'absolute top-3 left-3 px-3 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-md border bg-rose-950/80 border-rose-500/40 text-rose-300 flex items-center gap-2 transition-all';
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500';
+        const reason = !state.mainSwitchClosed ? 'Saklar Utama Terbuka' : 'Jalurnya Terputus / Bohlam Rusak';
+        text.textContent = `Rangkaian Terbuka (${reason}) — I = 0.00 A`;
+      }
+    }
+
+    function renderControlPanels() {
+      // 1. Lamp Count Box
+      const countBox = document.getElementById('lamp-count-box');
+      if (state.mode === 'single') {
+        countBox.classList.add('hidden');
+      } else {
+        countBox.classList.remove('hidden');
+        const b2 = document.getElementById('btn-count-2');
+        const b3 = document.getElementById('btn-count-3');
+        b2.className = state.lampCount === 2
+          ? 'px-3 py-1 rounded-md text-xs font-bold bg-sky-500 text-slate-950 shadow transition'
+          : 'px-3 py-1 rounded-md text-xs font-bold text-slate-500 dark:text-slate-400 transition';
+        b3.className = state.lampCount === 3
+          ? 'px-3 py-1 rounded-md text-xs font-bold bg-sky-500 text-slate-950 shadow transition'
+          : 'px-3 py-1 rounded-md text-xs font-bold text-slate-500 dark:text-slate-400 transition';
+      }
+
+      // 2. Main Switch Button
+      const mainBtn = document.getElementById('btn-main-switch');
+      if (state.mainSwitchClosed) {
+        mainBtn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition flex items-center gap-1.5 shadow-sm';
+        mainBtn.innerHTML = '<i class="fa-solid fa-toggle-on text-sm"></i> ON (Tertutup)';
+      } else {
+        mainBtn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-rose-500 hover:bg-rose-400 text-white transition flex items-center gap-1.5 shadow-sm';
+        mainBtn.innerHTML = '<i class="fa-solid fa-toggle-off text-sm"></i> OFF (Terbuka)';
+      }
+
+      // 3. Branch Switches (Parallel only)
+      const branchContainer = document.getElementById('branch-switches-container');
+      if (state.mode === 'parallel') {
+        branchContainer.classList.remove('hidden');
+        branchContainer.classList.add('flex');
+        let html = '';
+        for (let i = 0; i < state.lampCount; i++) {
+          const lamp = state.lamps[i];
+          const btnClass = lamp.switchClosed
+            ? 'px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500/30'
+            : 'px-3 py-1 rounded-lg text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40 hover:bg-rose-500/30';
+          html += `
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-medium text-slate-600 dark:text-slate-300">Saklar Cabang S<sub>${i + 1}</sub> (Lampu ${i + 1})</span>
+              <button onclick="toggleBranchSwitch(${i})" class="${btnClass} transition">
+                ${lamp.switchClosed ? 'ON (Tertutup)' : 'OFF (Terbuka)'}
+              </button>
+            </div>
+          `;
+        }
+        branchContainer.innerHTML = html;
+      } else {
+        branchContainer.classList.add('hidden');
+        branchContainer.classList.remove('flex');
+      }
+
+      // 4. Individual Lamp Controls (R slider + Putuskan Lampu button)
+      const activeCount = state.mode === 'single' ? 1 : state.lampCount;
+      const listContainer = document.getElementById('lamps-control-list');
+      let lampsHtml = '';
+
+      for (let i = 0; i < activeCount; i++) {
+        const lamp = state.lamps[i];
+        const metric = state.results.lampMetrics[i];
+        const isLit = metric && metric.active;
+
+        lampsHtml += `
+          <div class="p-3 rounded-xl border transition ${
+            lamp.broken
+              ? 'bg-rose-950/20 border-rose-500/40'
+              : 'bg-slate-100/80 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/70'
+          }">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${
+                  isLit
+                    ? 'bg-amber-400 text-slate-950 shadow-sm shadow-amber-400/40'
+                    : 'bg-slate-300 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                }">
+                  <i class="fa-solid fa-lightbulb"></i>
+                </span>
+                <span class="text-xs sm:text-sm font-bold">${lamp.name}</span>
+              </div>
+
+              <button onclick="toggleLampBroken(${i})" class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
+                lamp.broken
+                  ? 'bg-amber-500 text-slate-950 hover:bg-amber-400'
+                  : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-rose-500 hover:text-white'
+              }">
+                <i class="fa-solid ${lamp.broken ? 'fa-wrench' : 'fa-link-slash'}"></i>
+                ${lamp.broken ? 'Pasang Bohlam' : 'Putuskan Lampu'}
+              </button>
+            </div>
+
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="text-slate-500 dark:text-slate-400">Hambatan (R<sub>${i + 1}</sub>):</span>
+              <span class="font-mono font-bold text-purple-400">${lamp.r.toFixed(1)} Ω</span>
+            </div>
+            <input type="range" min="1" max="20" step="1" value="${lamp.r}" oninput="updateLampResistance(${i}, this.value)" class="w-full" />
+            <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-0.5">
+              <span>1 Ω</span>
+              <span>10 Ω</span>
+              <span>20 Ω</span>
+            </div>
+          </div>
+        `;
+      }
+      listContainer.innerHTML = lampsHtml;
+
+      // 5. Pedagogical Tip
+      const tipEl = document.getElementById('pedagogical-tip');
+      if (state.mode === 'single') {
+        tipEl.innerHTML = `Pada <strong>Rangkaian Tunggal</strong>, seluruh tegangan baterai (${state.voltage.toFixed(1)} V) diberikan ke satu lampu. Naikkan tegangan (V) atau turunkan hambatan (R) untuk melihat arus (I) meningkat dan cahaya lampu semakin terang!`;
+      } else if (state.mode === 'series') {
+        tipEl.innerHTML = `Pada <strong>Rangkaian Seri</strong>, kuat arus sama besar di setiap lampu (I<sub>tot</sub> = I<sub>1</sub> = I<sub>2</sub>), sedangkan tegangan terbagi. Coba klik <strong>"Putuskan Lampu"</strong> pada Lampu 1 — semua lampu ikut padam karena hanya ada satu jalur arus!`;
+      } else {
+        tipEl.innerHTML = `Pada <strong>Rangkaian Paralel</strong>, setiap cabang mendapat tegangan penuh (${state.voltage.toFixed(1)} V). Coba matikan <strong>Saklar Cabang S₁</strong> atau klik <strong>"Putuskan Lampu"</strong> — lampu di cabang lain tetap menyala normal!`;
+      }
+    }
+
+    function renderMultimeter() {
+      const { rTotal, iTotal, pTotal, lampMetrics } = state.results;
+
+      document.getElementById('read-vtot').textContent = state.voltage.toFixed(2) + ' V';
+      document.getElementById('read-rtot').textContent = isFinite(rTotal) ? rTotal.toFixed(2) + ' Ω' : '∞ Ω';
+      document.getElementById('read-itot').textContent = iTotal.toFixed(2) + ' A';
+      document.getElementById('read-ptot').textContent = pTotal.toFixed(2) + ' W';
+
+      const tbody = document.getElementById('lamp-table-body');
+      let rows = '';
+
+      lampMetrics.forEach((m, idx) => {
+        const lamp = state.lamps[idx];
+        let statusBadge = '';
+        if (lamp.broken) {
+          statusBadge = '<span class="px-2 py-0.5 rounded-full text-[11px] font-sans font-semibold bg-rose-500/20 text-rose-400">Putus / Lepas</span>';
+        } else if (m.active) {
+          statusBadge = '<span class="px-2 py-0.5 rounded-full text-[11px] font-sans font-semibold bg-amber-500/20 text-amber-400">Menyala</span>';
+        } else {
+          statusBadge = '<span class="px-2 py-0.5 rounded-full text-[11px] font-sans font-semibold bg-slate-500/20 text-slate-400">Padam</span>';
+        }
+
+        rows += `
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+            <td class="py-2 px-3 font-sans font-semibold">${lamp.name}</td>
+            <td class="py-2 px-3">${statusBadge}</td>
+            <td class="py-2 px-3 text-purple-400">${lamp.r.toFixed(2)} Ω</td>
+            <td class="py-2 px-3 text-amber-500">${m.v.toFixed(2)} V</td>
+            <td class="py-2 px-3 text-sky-400">${m.i.toFixed(2)} A</td>
+            <td class="py-2 px-3 text-emerald-400">${m.p.toFixed(2)} W</td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = rows;
+    }
+
+    function renderFormulas() {
+      const badge = document.getElementById('concept-badge');
+      const container = document.getElementById('formula-content');
+      const V = state.voltage;
+      const { rTotal, iTotal, pTotal, lampMetrics } = state.results;
+
+      if (state.mode === 'single') {
+        badge.textContent = 'Rangkaian Tunggal (Hukum Ohm)';
+        const r1 = state.lamps[0].r;
+        container.innerHTML = `
+          <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/70">
+            <div class="font-bold text-sky-400 mb-1">1. Hukum Ohm (Kuat Arus Total)</div>
+            <div class="font-mono text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              I = V / R<sub>1</sub><br/>
+              I = ${V.toFixed(1)} V / ${r1.toFixed(1)} Ω = <strong class="text-sky-400">${iTotal.toFixed(2)} A</strong>
+            </div>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/70">
+            <div class="font-bold text-emerald-400 mb-1">2. Daya Listrik Lampu</div>
+            <div class="font-mono text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              P = V × I = I² × R<br/>
+              P = ${V.toFixed(1)} V × ${iTotal.toFixed(2)} A = <strong class="text-emerald-400">${pTotal.toFixed(2)} W</strong>
+            </div>
+          </div>
+        `;
+      } else if (state.mode === 'series') {
+        badge.textContent = `Rangkaian Seri (${state.lampCount} Lampu)`;
+        const activeLamps = state.lamps.slice(0, state.lampCount);
+        const rFormula = activeLamps.map((_, i) => `R<sub>${i + 1}</sub>`).join(' + ');
+        const rValues = activeLamps.map(l => l.r.toFixed(1)).join(' + ');
+        const sumR = activeLamps.reduce((acc, l) => acc + l.r, 0);
+        const vParts = lampMetrics.map((m, i) => `V<sub>${i + 1}</sub>=${m.v.toFixed(2)}V`).join(', ');
+
+        container.innerHTML = `
+          <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/70">
+            <div class="font-bold text-purple-400 mb-1">1. Hambatan Pengganti Seri</div>
+            <div class="font-mono text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              R<sub>tot</sub> = ${rFormula}<br/>
+              R<sub>tot</sub> = ${rValues} = <strong class="text-purple-400">${sumR.toFixed(2)} Ω</strong>
+            </div>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/70">
+            <div class="font-bold text-sky-400 mb-1">2. Pembagian Arus & Tegangan</div>
+            <div class="font-mono text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              I<sub>tot</sub> = V / R<sub>tot</sub> = <strong class="text-sky-400">${iTotal.toFixed(2)} A</strong> (sama di tiap lampu)<br/>
+              V<sub>tot</sub> = ΣV<sub>i</sub> → ${vParts}
+            </div>
+          </div>
+        `;
+      } else {
+        badge.textContent = `Rangkaian Paralel (${state.lampCount} Cabang)`;
+        const activeLamps = state.lamps.slice(0, state.lampCount);
+        const invFormula = activeLamps.map((_, i) => `1/R<sub>${i + 1}</sub>`).join(' + ');
+        const iParts = lampMetrics.map((m, i) => `I<sub>${i + 1}</sub>=${m.i.toFixed(2)}A`).join(' + ');
+
+        container.innerHTML = `
+          <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/70">
+            <div class="font-bold text-purple-400 mb-1">1. Hambatan Pengganti Paralel</div>
+            <div class="font-mono text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              1/R<sub>tot</sub> = ${invFormula}<br/>
+              R<sub>tot</sub> = <strong class="text-purple-400">${isFinite(rTotal) ? rTotal.toFixed(2) + ' Ω' : '∞ Ω (Terbuka)'}</strong>
+            </div>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/70">
+            <div class="font-bold text-sky-400 mb-1">2. Hukum I Kirchhoff (Arus Cabang)</div>
+            <div class="font-mono text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              V<sub>1</sub> = V<sub>2</sub> = V<sub>tot</sub> = <strong class="text-amber-500">${V.toFixed(1)} V</strong><br/>
+              I<sub>tot</sub> = ${iParts} = <strong class="text-sky-400">${iTotal.toFixed(2)} A</strong>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    /**
+     * =========================================================================
+     * 3. INTERACTIVE HTML5 CANVAS VISUALIZATION & PARTICLE ANIMATION
+     * =========================================================================
+     */
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      const dpr = window.devicePixelRatio || 1;
+      const rect = wrapper.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // Canvas Pointer / Touch Hit-testing
+    function getPointerPos(evt) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+      const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    }
+
+    canvas.addEventListener('mousemove', (e) => {
+      const pos = getPointerPos(e);
+      let found = null;
+      for (const hb of state.hitboxes) {
+        if (pos.x >= hb.x - hb.w / 2 && pos.x <= hb.x + hb.w / 2 &&
+            pos.y >= hb.y - hb.h / 2 && pos.y <= hb.y + hb.h / 2) {
+          found = hb;
+          break;
+        }
+      }
+      state.hoveredId = found ? found.id : null;
+      const tooltip = document.getElementById('canvas-tooltip');
+      if (found) {
+        canvas.style.cursor = 'pointer';
+        tooltip.textContent = found.tooltip;
+        tooltip.classList.remove('hidden');
+      } else {
+        canvas.style.cursor = 'default';
+        tooltip.classList.add('hidden');
+      }
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      state.hoveredId = null;
+      document.getElementById('canvas-tooltip').classList.add('hidden');
+    });
+
+    canvas.addEventListener('click', (e) => {
+      const pos = getPointerPos(e);
+      for (const hb of state.hitboxes) {
+        if (pos.x >= hb.x - hb.w / 2 && pos.x <= hb.x + hb.w / 2 &&
+            pos.y >= hb.y - hb.h / 2 && pos.y <= hb.y + hb.h / 2) {
+          hb.onClick();
+          break;
+        }
+      }
+    });
+
+    /**
+     * Draws a glowing grid background inside the lab canvas
+     */
+    function drawLabGrid(w, h) {
+      ctx.fillStyle = '#070d19';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.06)';
+      ctx.lineWidth = 1;
+      const step = 28;
+      ctx.beginPath();
+      for (let x = 0; x <= w; x += step) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+      }
+      for (let y = 0; y <= h; y += step) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+      }
+      ctx.stroke();
+    }
+
+    /**
+     * Draws a realistic + schematic battery cell at (x, y) oriented vertically
+     * Top terminal = Positive (+), Bottom terminal = Negative (-)
+     */
+    function drawBattery(x, y, voltage, showLabels) {
+      // Battery casing
+      const bw = 42;
+      const bh = 86;
+
+      // Positive terminal nub on top
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.roundRect(x - 10, y - bh / 2 - 7, 20, 8, [3, 3, 0, 0]);
+      ctx.fill();
+
+      // Main cylindrical body
+      const grad = ctx.createLinearGradient(x - bw / 2, y, x + bw / 2, y);
+      grad.addColorStop(0, '#1e293b');
+      grad.addColorStop(0.5, '#334155');
+      grad.addColorStop(1, '#0f172a');
+      ctx.fillStyle = grad;
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(x - bw / 2, y - bh / 2, bw, bh, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      // Copper/Amber top band (+)
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.roundRect(x - bw / 2 + 1, y - bh / 2 + 1, bw - 2, 22, [7, 7, 0, 0]);
+      ctx.fill();
+
+      // Plus & Minus symbols
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 15px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('+', x, y - bh / 2 + 12);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 18px Inter, sans-serif';
+      ctx.fillText('−', x, y + bh / 2 - 14);
+
+      // Voltage text inside battery
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 11px JetBrains Mono, monospace';
+      ctx.fillText(`${voltage.toFixed(1)}V`, x, y + 4);
+
+      if (showLabels) {
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = 'bold 12px Inter, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(`Baterai`, x - bw / 2 - 10, y - 6);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px JetBrains Mono, monospace';
+        ctx.fillText(`${voltage.toFixed(1)} V`, x - bw / 2 - 10, y + 10);
+      }
+    }
+
+    /**
+     * Draws an interactive toggle switch on a horizontal wire segment
+     */
+    function drawSwitch(x, y, isClosed, label, id, onClick) {
+      const w = 52;
+      const isHovered = state.hoveredId === id;
+
+      // Register hitbox
+      state.hitboxes.push({
+        id,
+        x,
+        y: y - 6,
+        w: 68,
+        h: 44,
+        tooltip: `Klik untuk ${isClosed ? 'MEMBUKA' : 'MENUTUP'} ${label}`,
+        onClick
+      });
+
+      // Clear wire gap behind switch
+      ctx.fillStyle = '#070d19';
+      ctx.fillRect(x - w / 2, y - 10, w, 20);
+
+      // Hover highlight ring
+      if (isHovered) {
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.14)';
+        ctx.beginPath();
+        ctx.roundRect(x - w / 2 - 8, y - 24, w + 16, 42, 10);
+        ctx.fill();
+      }
+
+      // Terminals
+      const leftX = x - w / 2 + 4;
+      const rightX = x + w / 2 - 4;
+
+      // Blade
+      ctx.strokeStyle = isClosed ? '#10b981' : '#f43f5e';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(leftX, y);
+      if (isClosed) {
+        ctx.lineTo(rightX, y);
+      } else {
+        ctx.lineTo(rightX - 6, y - 22);
+      }
+      ctx.stroke();
+
+      // Contact nodes
+      [leftX, rightX].forEach(cx => {
+        ctx.fillStyle = '#e2e8f0';
+        ctx.beginPath();
+        ctx.arc(cx, y, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      });
+
+      // Label below/above switch
+      ctx.fillStyle = isClosed ? '#34d399' : '#fb7185';
+      ctx.font = 'bold 11px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, x, y + 20);
+    }
+
+    /**
+     * Draws an interactive light bulb with dynamic radial glow & filament
+     */
+    function drawBulb(x, y, lamp, metric, index, orientation = 'horizontal') {
+      const isHovered = state.hoveredId === `bulb-${index}`;
+      const isLit = metric && metric.active && metric.brightness > 0;
+      const b = isLit ? metric.brightness : 0;
+
+      // Register hitbox
+      state.hitboxes.push({
+        id: `bulb-${index}`,
+        x,
+        y,
+        w: 62,
+        h: 68,
+        tooltip: `Klik untuk ${lamp.broken ? 'MEMASANG' : 'MEMUTUSKAN'} ${lamp.name}`,
+        onClick: () => toggleLampBroken(index)
+      });
+
+      // Radial light glow when active
+      if (isLit) {
+        const glowRadius = 42 + b * 48;
+        const glow = ctx.createRadialGradient(x, y - 6, 4, x, y - 6, glowRadius);
+        glow.addColorStop(0, `rgba(254, 240, 138, ${Math.min(0.95, 0.45 + b * 0.4)})`);
+        glow.addColorStop(0.45, `rgba(250, 204, 21, ${Math.min(0.55, 0.18 + b * 0.25)})`);
+        glow.addColorStop(1, 'rgba(250, 204, 21, 0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(x, y - 6, glowRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Hover outline
+      if (isHovered) {
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.arc(x, y - 4, 32, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Bulb base (screw socket)
+      ctx.fillStyle = '#64748b';
+      ctx.beginPath();
+      ctx.roundRect(x - 10, y + 10, 20, 13, 3);
+      ctx.fill();
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Glass globe
+      ctx.fillStyle = isLit
+        ? `rgba(254, 249, 195, ${Math.min(0.96, 0.35 + b * 0.5)})`
+        : 'rgba(148, 163, 184, 0.14)';
+      ctx.strokeStyle = isLit ? '#fde047' : (lamp.broken ? '#f43f5e' : '#94a3b8');
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y - 7, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Filament inside glass
+      ctx.strokeStyle = isLit ? '#ffffff' : (lamp.broken ? '#f43f5e' : '#64748b');
+      ctx.lineWidth = isLit ? 2.5 : 1.8;
+      ctx.beginPath();
+      ctx.moveTo(x - 6, y + 10);
+      ctx.lineTo(x - 6, y - 4);
+      if (lamp.broken) {
+        // Broken snapped filament
+        ctx.lineTo(x - 2, y - 9);
+        ctx.moveTo(x + 3, y - 4);
+        ctx.lineTo(x + 6, y - 8);
+        ctx.lineTo(x + 6, y + 10);
+      } else {
+        // Intact zigzag filament
+        ctx.lineTo(x - 3, y - 10);
+        ctx.lineTo(x, y - 5);
+        ctx.lineTo(x + 3, y - 10);
+        ctx.lineTo(x + 6, y - 4);
+        ctx.lineTo(x + 6, y + 10);
+      }
+      ctx.stroke();
+
+      // Broken badge X
+      if (lamp.broken) {
+        ctx.fillStyle = '#f43f5e';
+        ctx.font = 'bold 11px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('PUTUS', x, y - 32);
+      }
+
+      // Data readout label next to/below bulb
+      if (state.showLabels) {
+        const labelOffsetX = orientation === 'vertical' ? 32 : 0;
+        const labelOffsetY = orientation === 'vertical' ? -6 : 38;
+        ctx.textAlign = orientation === 'vertical' ? 'left' : 'center';
+
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 11px Inter, sans-serif';
+        ctx.fillText(`L${index + 1} (${lamp.r}Ω)`, x + labelOffsetX, y + labelOffsetY);
+
+        ctx.fillStyle = isLit ? '#38bdf8' : '#64748b';
+        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.fillText(`${metric.v.toFixed(1)}V | ${metric.i.toFixed(2)}A`, x + labelOffsetX, y + labelOffsetY + 13);
+      }
+    }
+
+    /**
+     * Draws wire segments and animated charge particles along polyline paths
+     */
+    function drawWireAndCharges(points, currentAmps, phaseOffset = 0) {
+      if (points.length < 2) return;
+
+      // 1. Base insulated wire
+      ctx.strokeStyle = currentAmps > 0.001 ? '#475569' : '#334155';
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
+      }
+      ctx.stroke();
+
+      // Subtle inner metallic core
+      ctx.strokeStyle = currentAmps > 0.001 ? '#94a3b8' : '#475569';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // 2. Animated particles if current > 0
+      if (currentAmps <= 0.001) return;
+
+      // Compute cumulative segment lengths
+      const segs = [];
+      let totalLen = 0;
+      for (let i = 0; i < points.length - 1; i++) {
+        const dx = points[i + 1].x - points[i].x;
+        const dy = points[i + 1].y - points[i].y;
+        const len = Math.hypot(dx, dy);
+        segs.push({ p1: points[i], p2: points[i + 1], len, angle: Math.atan2(dy, dx) });
+        totalLen += len;
+      }
+
+      const spacing = 34;
+      // Speed scales smoothly with currentAmps
+      const speedFactor = Math.min(260, 28 + currentAmps * 42);
+      const shift = (phaseOffset * speedFactor) % spacing;
+
+      // Helper to sample point & angle at distance d along path
+      function sampleAt(dist) {
+        let d = ((dist % totalLen) + totalLen) % totalLen;
+        for (const s of segs) {
+          if (d <= s.len) {
+            const t = s.len === 0 ? 0 : d / s.len;
+            return {
+              x: s.p1.x + (s.p2.x - s.p1.x) * t,
+              y: s.p1.y + (s.p2.y - s.p1.y) * t,
+              angle: s.angle
+            };
+          }
+          d -= s.len;
+        }
+        return { x: points[0].x, y: points[0].y, angle: 0 };
+      }
+
+      // Path is defined from (+) terminal to (-) terminal (Conventional Current direction)
+      // Electrons move in the opposite direction (-shift)
+      for (let d = 0; d < totalLen; d += spacing) {
+        if (state.flowType === 'conventional' || state.flowType === 'both') {
+          const pt = sampleAt(d + shift);
+          drawArrowParticle(pt.x, pt.y, pt.angle, '#f43f5e');
+        }
+        if (state.flowType === 'electron' || state.flowType === 'both') {
+          const offset = state.flowType === 'both' ? spacing / 2 : 0;
+          const pt = sampleAt(d + offset - shift);
+          drawElectronParticle(pt.x, pt.y);
+        }
+      }
+    }
+
+    function drawElectronParticle(x, y) {
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(x, y, 4.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 8px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('−', x, y + 0.5);
+    }
+
+    function drawArrowParticle(x, y, angle, color) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(6, 0);
+      ctx.lineTo(-4, -4.5);
+      ctx.lineTo(-2, 0);
+      ctx.lineTo(-4, 4.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    /**
+     * Master Scene Renderer
+     */
+    function renderScene() {
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+
+      state.hitboxes = [];
+      drawLabGrid(w, h);
+
+      const padX = Math.max(55, w * 0.13);
+      const topY = Math.max(72, h * 0.22);
+      const botY = h - Math.max(58, h * 0.18);
+      const leftX = padX;
+      const rightX = w - padX;
+      const midY = (topY + botY) / 2;
+
+      const iTot = state.results.iTotal;
+
+      if (state.mode === 'single') {
+        // Single loop: Battery on left, Main Switch on top, Lamp 1 on bottom
+        const loopPoints = [
+          { x: leftX, y: midY - 43 }, // Battery (+)
+          { x: leftX, y: topY },
+          { x: rightX, y: topY },
+          { x: rightX, y: botY },
+          { x: leftX, y: botY },
+          { x: leftX, y: midY + 43 }  // Battery (-)
+        ];
+
+        drawWireAndCharges(loopPoints, iTot, state.animPhase);
+        drawBattery(leftX, midY, state.voltage, state.showLabels);
+        drawSwitch((leftX + rightX) / 2, topY, state.mainSwitchClosed, 'Saklar Utama', 'sw-main', toggleMainSwitch);
+        drawBulb((leftX + rightX) / 2, botY - 8, state.lamps[0], state.results.lampMetrics[0], 0, 'horizontal');
+      } 
+      else if (state.mode === 'series') {
+        // Series loop: Battery on left, Main Switch on top, 2 or 3 bulbs along bottom
+        const loopPoints = [
+          { x: leftX, y: midY - 43 },
+          { x: leftX, y: topY },
+          { x: rightX, y: topY },
+          { x: rightX, y: botY },
+          { x: leftX, y: botY },
+          { x: leftX, y: midY + 43 }
+        ];
+
+        drawWireAndCharges(loopPoints, iTot, state.animPhase);
+        drawBattery(leftX, midY, state.voltage, state.showLabels);
+        drawSwitch((leftX + rightX) / 2, topY, state.mainSwitchClosed, 'Saklar Utama', 'sw-main', toggleMainSwitch);
+
+        const count = state.lampCount;
+        const span = rightX - leftX;
+        for (let i = 0; i < count; i++) {
+          const bx = leftX + (span * (i + 1)) / (count + 1);
+          drawBulb(bx, botY - 8, state.lamps[i], state.results.lampMetrics[i], i, 'horizontal');
+        }
+      } 
+      else if (state.mode === 'parallel') {
+        // Parallel layout: Battery on left, Main Switch on top-left bus, vertical branches for each lamp
+        const count = state.lampCount;
+        const busStartX = leftX + Math.min(135, (rightX - leftX) * 0.28);
+        const branchSpan = rightX - busStartX;
+
+        // Calculate X positions for each vertical branch
+        const branchXs = [];
+        for (let i = 0; i < count; i++) {
+          branchXs.push(busStartX + (branchSpan * (i + 0.5)) / count);
+        }
+        const lastBranchX = branchXs[branchXs.length - 1];
+
+        // 1. Main feeder top & bottom up to first branch
+        const topFeeder = [
+          { x: leftX, y: midY - 43 },
+          { x: leftX, y: topY },
+          { x: branchXs[0], y: topY }
+        ];
+        const botFeeder = [
+          { x: branchXs[0], y: botY },
+          { x: leftX, y: botY },
+          { x: leftX, y: midY + 43 }
+        ];
+        drawWireAndCharges(topFeeder, iTot, state.animPhase);
+        drawWireAndCharges(botFeeder, iTot, state.animPhase);
+
+        // 2. Intermediate bus segments & vertical branches
+        let remainingCurrent = iTot;
+        for (let i = 0; i < count; i++) {
+          const bx = branchXs[i];
+          const metric = state.results.lampMetrics[i];
+          const iBranch = metric ? metric.i : 0;
+
+          // Vertical branch wire (top bus -> bulb -> bottom bus)
+          const branchWire = [
+            { x: bx, y: topY },
+            { x: bx, y: botY }
+          ];
+          drawWireAndCharges(branchWire, iBranch, state.animPhase + i * 0.2);
+
+          // Horizontal bus segment to next branch
+          if (i < count - 1) {
+            remainingCurrent = Math.max(0, remainingCurrent - iBranch);
+            const nextX = branchXs[i + 1];
+            drawWireAndCharges([{ x: bx, y: topY }, { x: nextX, y: topY }], remainingCurrent, state.animPhase);
+            drawWireAndCharges([{ x: nextX, y: botY }, { x: bx, y: botY }], remainingCurrent, state.animPhase);
+          }
+
+          // Junction dots
+          [topY, botY].forEach(jy => {
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath();
+            ctx.arc(bx, jy, 4, 0, Math.PI * 2);
+            ctx.fill();
+          });
+
+          // Branch switch at upper section of vertical wire (rendered horizontally on a tiny dogleg or directly clickable)
+          const swY = topY + (botY - topY) * 0.24;
+          drawVerticalBranchSwitch(bx, swY, state.lamps[i].switchClosed, `S${i + 1}`, i);
+
+          // Bulb at lower-mid section of vertical wire
+          const bulbY = topY + (botY - topY) * 0.64;
+          drawBulb(bx, bulbY, state.lamps[i], metric, i, 'vertical');
+        }
+
+        drawBattery(leftX, midY, state.voltage, state.showLabels);
+        drawSwitch((leftX + branchXs[0]) / 2, topY, state.mainSwitchClosed, 'S. Utama', 'sw-main', toggleMainSwitch);
+      }
+    }
+
+    /**
+     * Draws a crisp vertical branch switch on parallel branch wires
+     */
+    function drawVerticalBranchSwitch(x, y, isClosed, label, index) {
+      const h = 36;
+      const id = `sw-branch-${index}`;
+      const isHovered = state.hoveredId === id;
+
+      state.hitboxes.push({
+        id,
+        x,
+        y,
+        w: 44,
+        h: 48,
+        tooltip: `Klik untuk ${isClosed ? 'MEMBUKA' : 'MENUTUP'} Saklar Cabang ${label}`,
+        onClick: () => toggleBranchSwitch(index)
+      });
+
+      // Clear wire gap
+      ctx.fillStyle = '#070d19';
+      ctx.fillRect(x - 8, y - h / 2, 16, h);
+
+      if (isHovered) {
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+        ctx.beginPath();
+        ctx.roundRect(x - 20, y - h / 2 - 4, 40, h + 8, 8);
+        ctx.fill();
+      }
+
+      const topNodeY = y - h / 2 + 4;
+      const botNodeY = y + h / 2 - 4;
+
+      ctx.strokeStyle = isClosed ? '#10b981' : '#f43f5e';
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(x, topNodeY);
+      if (isClosed) {
+        ctx.lineTo(x, botNodeY);
+      } else {
+        ctx.lineTo(x - 16, botNodeY - 4);
+      }
+      ctx.stroke();
+
+      [topNodeY, botNodeY].forEach(cy => {
+        ctx.fillStyle = '#e2e8f0';
+        ctx.beginPath();
+        ctx.arc(x, cy, 3.8, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.fillStyle = isClosed ? '#34d399' : '#fb7185';
+      ctx.font = 'bold 10px Inter, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(label, x - 12, y + 3);
+    }
+
+    /**
+     * Main RequestAnimationFrame Loop
+     */
+    function animateLoop(timestamp) {
+      if (!state.lastTimestamp) state.lastTimestamp = timestamp;
+      const dt = (timestamp - state.lastTimestamp) / 1000;
+      state.lastTimestamp = timestamp;
+
+      state.animPhase += dt;
+      renderScene();
+      requestAnimationFrame(animateLoop);
+    }
+
+    // Boot application on window load
+    window.onload = function () {
+      resizeCanvas();
+      updateAll();
+      requestAnimationFrame(animateLoop);
+    };
+  </script>
+</body>
+</html>
